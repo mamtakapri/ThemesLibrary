@@ -63,6 +63,16 @@ public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.CustomView
     public void onBindViewHolder(@NonNull CustomViewHolder holder, int position) {
         Object url = themeDataList.get(position).getImgUrl();
         String imgName = themeDataList.get(position).getName();
+
+        if(themeDataList.get(position).getIsDownloaded())
+        {
+            holder.download_btn.setVisibility(View.GONE);
+        }
+
+        else {
+            holder.download_btn.setVisibility(View.VISIBLE);
+        }
+
         if(url!=null)
         {
             Glide.with(context).asBitmap().optionalCenterCrop()
@@ -76,7 +86,7 @@ public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.CustomView
                 holder.download_btn.setVisibility(GONE);
                 holder.download_progress.setVisibility(VISIBLE);
                 Toast.makeText(context,"Download has started",Toast.LENGTH_SHORT).show();
-                listener.onDownloadBtnClicked(themeDataList.get(position).getImgUrl().toString(),themeDataList.get(position).getName());
+                listener.onDownloadBtnClicked(themeDataList.get(position).getImgUrl().toString(),themeDataList.get(position).getName(),holder.download_progress);
             }
         });
         holder.download_progress.setOnClickListener(new OnClickListener() {

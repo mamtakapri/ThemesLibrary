@@ -41,6 +41,7 @@ public class Datum {
     @SerializedName("category")
     @Expose
     private Category category;
+    private boolean isDownloaded = false;
 
     public Integer getId() {
         return id;
@@ -48,6 +49,14 @@ public class Datum {
 
     public void setId(Integer id) {
         this.id = id;
+    }
+
+    public boolean getIsDownloaded() {
+        return isDownloaded;
+    }
+
+    public void setIsDownloaded(boolean isDownloaded) {
+        this.isDownloaded = isDownloaded;
     }
 
     public String getName() {
