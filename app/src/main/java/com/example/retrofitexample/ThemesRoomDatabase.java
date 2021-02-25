@@ -11,7 +11,7 @@ import androidx.room.RoomDatabase;
 @Database(entities = ThemesEntity.class, exportSchema = false, version = 1)
 public abstract class ThemesRoomDatabase extends RoomDatabase{
 
-    private static final String DATABASE_NAME = "THEME_DB";
+    public static final String DATABASE_NAME = "THEME_DB";
     private static  ThemesRoomDatabase sInstance;
     private static final Object LOCK = new Object();
 
@@ -20,7 +20,7 @@ public abstract class ThemesRoomDatabase extends RoomDatabase{
             synchronized (LOCK) {
                 Log.d("THEME DB", "Creating new database instance");
                 sInstance = Room.databaseBuilder(context.getApplicationContext(),
-                        ThemesRoomDatabase.class, ThemesRoomDatabase.DATABASE_NAME)
+                        ThemesRoomDatabase.class, ThemesRoomDatabase.DATABASE_NAME).allowMainThreadQueries()
                         .build();
             }
         }

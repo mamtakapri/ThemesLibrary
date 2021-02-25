@@ -42,6 +42,7 @@ public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.CustomView
     public Context context;
     OnButtonClickListener listener;
 
+
     public CustomAdapter(Context context, List<Datum> themeData,OnButtonClickListener listener)
     {
         this.context = context;
@@ -63,6 +64,7 @@ public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.CustomView
     public void onBindViewHolder(@NonNull CustomViewHolder holder, int position) {
         Object url = themeDataList.get(position).getImgUrl();
         String imgName = themeDataList.get(position).getName();
+        boolean isDownloaded = themeDataList.get(position).getIsDownloaded();
 
         if(themeDataList.get(position).getIsDownloaded())
         {
@@ -86,14 +88,13 @@ public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.CustomView
                 holder.download_btn.setVisibility(GONE);
                 holder.download_progress.setVisibility(VISIBLE);
                 Toast.makeText(context,"Download has started",Toast.LENGTH_SHORT).show();
-                listener.onDownloadBtnClicked(themeDataList.get(position).getImgUrl().toString(),themeDataList.get(position).getName(),holder.download_progress);
+                listener.onDownloadBtnClicked(url.toString(),imgName ,holder.download_progress);
             }
         });
         holder.download_progress.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
-                holder.download_progress.setVisibility(GONE);
-                holder.download_btn.setVisibility(VISIBLE);
+                holder.download_progress.setVisibility(INVISIBLE);
                 Toast.makeText(context,"Download Cancelled",Toast.LENGTH_SHORT).show();
             }
         });
@@ -120,7 +121,4 @@ public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.CustomView
 
         }
     }
-
-
-
 }
