@@ -35,13 +35,16 @@ public class Datum {
     @SerializedName("created_at")
     @Expose
     private String createdAt;
+    @SerializedName("isDownloaded")
+    @Expose
+    private boolean isDownloaded = false;
     @SerializedName("updated_at")
     @Expose
     private String updatedAt;
     @SerializedName("category")
     @Expose
     private Category category;
-    private boolean isDownloaded = false;
+
 
     public Integer getId() {
         return id;

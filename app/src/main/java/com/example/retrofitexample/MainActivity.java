@@ -12,6 +12,7 @@ import android.os.Environment;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
@@ -47,7 +48,8 @@ public class MainActivity extends AppCompatActivity implements  OnButtonClickLis
     RecyclerView recyclerView;
     String url = "";
     String name = "";
-    ProgressBar progressBar;
+    ProgressBar progress;
+    Button downloadBtn;
 
     ThemesRoomDatabase db;
     ThemesEntity entity = new ThemesEntity();
@@ -89,7 +91,7 @@ public class MainActivity extends AppCompatActivity implements  OnButtonClickLis
 
     private static boolean doesDatabaseExist(Context context, String dbName) {
         File dbFile = context.getDatabasePath(dbName);
-        Toast.makeText(context.getApplicationContext(),dbFile.getAbsolutePath().toString(),Toast.LENGTH_SHORT).show();
+        Toast.makeText(context.getApplicationContext(),dbFile.getAbsolutePath(),Toast.LENGTH_SHORT).show();
         return dbFile.exists();
     }
 
@@ -128,8 +130,20 @@ public class MainActivity extends AppCompatActivity implements  OnButtonClickLis
                     //progressDialog.dismiss();
                     //generateDataList(model.getData());
                     generateDataList((model.getData()));
-                    Log.d("data",String.valueOf(model.getData().size()));
+                    //Log.d("data",String.valueOf(model.getData().size()));
 
+                    /*if (db.themesDao().getThemesUrlList(url).size()==0 && !isDownload)
+                    {
+                        entity.setThemeUrl(url);
+                        entity.setDownload_status(true);
+                        entity.setPath(MainActivity.this.getDatabasePath(ThemesRoomDatabase.DATABASE_NAME).toString() + "/" + name);
+                        db.themesDao().insertTheme(entity);
+                        entity.setDownload_status(true);
+                    }*/
+
+                }
+                else
+                {
 
                 }
 
@@ -157,14 +171,16 @@ public class MainActivity extends AppCompatActivity implements  OnButtonClickLis
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
-    public void onDownloadBtnClicked(String url, String name, ProgressBar download_progress) {
+    public void onDownloadBtnClicked(String url, String name, Button downloadBtn, ProgressBar progress, boolean isDownloaded) {
+        this.url = url;
+        this.name = name;
+        this.downloadBtn = downloadBtn;
+        this.isDownload = isDownloaded;
+        this.progress = progress;
         if(Build.VERSION.SDK_INT > Build.VERSION_CODES.M)
         {
-            progressBar = download_progress;
             if(ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED)
             {
-                this.url = url;
-                this.name = name;
                 beginDownload();
             }
             else
@@ -174,8 +190,7 @@ public class MainActivity extends AppCompatActivity implements  OnButtonClickLis
         }
         else
         {
-            beginDownload();
-            //download without permission
+            beginDownload();//download without permission
         }
     }
 
@@ -199,7 +214,7 @@ public class MainActivity extends AppCompatActivity implements  OnButtonClickLis
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     private void beginDownload() {
-        if (url != "")
+        if (url != null)
         {
 
              new AsyncTaskExample().execute();
@@ -229,6 +244,11 @@ public class MainActivity extends AppCompatActivity implements  OnButtonClickLis
             //registerReceiver(onComplete, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
 
         }
+        else
+        {
+
+            Toast.makeText(MainActivity.this, "File Not Exist", Toast.LENGTH_SHORT).show();
+        }
     }
 
 
@@ -245,46 +265,49 @@ public class MainActivity extends AppCompatActivity implements  OnButtonClickLis
         @Override
         protected File doInBackground(String... strings) {
             Bitmap bmImg = null;
-            if(!TextUtils.isEmpty(url)) {
-                bmImg =getBitmap(url);
+            if (!TextUtils.isEmpty(url)) {
+                bmImg = getBitmap(url);
             }
-            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-            bmImg.compress(Bitmap.CompressFormat.JPEG, 100, bytes);
-            File file = new File(Environment.getExternalStorageDirectory()+ File.separator + Environment.DIRECTORY_DCIM + File.separator +name);
-            try {
-                FileOutputStream fo = new FileOutputStream(file);
-                fo.write(bytes.toByteArray());
-                fo.flush();
-                fo.close();
-            } catch (IOException e) {
-                e.printStackTrace();
+            if(bmImg!=null) {
+                ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+                bmImg.compress(Bitmap.CompressFormat.JPEG, 100, bytes);
+                File file = new File(Environment.getExternalStorageDirectory() + File.separator + Environment.DIRECTORY_DCIM + File.separator + name);
+                try {
+                    FileOutputStream fo = new FileOutputStream(file);
+                    fo.write(bytes.toByteArray());
+                    fo.flush();
+                    fo.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                return file;
             }
+                return null;
 
-            return file;
+
         }
 
         @Override
         protected void onPostExecute(File file) {
-            if(file.exists()) {
+            if(file!=null && file.exists()) {
 
 
-                if (db.themesDao().getThemesUrlList(url).size()==0 && !isDownload) {
+                if (!isDownload) {
 
                     Toast.makeText(MainActivity.this, file.getAbsolutePath(), Toast.LENGTH_SHORT).show();
                     super.onPostExecute(file);
-
-                    entity.setThemeUrl(url);
+                    isDownload = true;
                     entity.setDownload_status(true);
-                    entity.setPath(MainActivity.this.getDatabasePath(ThemesRoomDatabase.DATABASE_NAME).toString() + "/" + name);
-                    db.themesDao().insertTheme(entity);
-                    entity.setDownload_status(true);
-                    progressBar.setVisibility(View.GONE);
+                    //entity.setPath(MainActivity.this.getDatabasePath(ThemesRoomDatabase.DATABASE_NAME).toString());
+                    db.themesDao().updateDownloadStatus(isDownload,file.getAbsolutePath(),url);
+                    progress.setVisibility(View.GONE);
                 }
                 else {
                     Toast.makeText(MainActivity.this, "Already Existed", Toast.LENGTH_SHORT).show();
-                    progressBar.setVisibility(View.GONE);
+                    progress.setVisibility(View.GONE);
                 }
             }
+
         }
     }
 }

@@ -15,16 +15,22 @@ import java.util.List;
 public interface ThemesDAO {
 
     @Query("SELECT * FROM themes_table")
-    List<ThemesEntity> getThemesUrlList();
+    List<ThemesEntity> getThemesAllList();
 
-    @Query("SELECT * FROM themes_table WHERE "+"themeUrl= :url")
+    @Query("SELECT * FROM themes_table WHERE "+"`THEME URL`= :url")
     List<ThemesEntity> getThemesUrlList(String url);
 
 //    @Query("SELECT * From themes_table where themeUrl=:url")
 //    ThemesEntity matchUrl(String url);
 
-    @Insert(onConflict = OnConflictStrategy.ABORT)
-    void insertTheme(ThemesEntity themes_table);
+    @Query("SELECT COUNT(`DOWNLOAD STATUS`) FROM themes_table WHERE `THEME URL` = :url AND `DOWNLOAD STATUS` = :stat")
+    int getThemesStatusList(String url, boolean stat);
+
+    @Query("UPDATE themes_table SET `DOWNLOAD STATUS` = :isDownloaded, `LOCAL PATH` = :path WHERE `THEME URL` = :url")
+    void updateDownloadStatus(boolean isDownloaded,String path, String url);
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    void insertTheme(ThemesEntity... themes_table);
 
     @Delete
     void deleteTheme(ThemesEntity themes_table);

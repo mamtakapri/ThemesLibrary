@@ -41,6 +41,8 @@ public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.CustomView
     public List<Datum> themeDataList;
     public Context context;
     OnButtonClickListener listener;
+    ThemesRoomDatabase db = ThemesRoomDatabase.getInstance(context);
+    ThemesEntity entity = new ThemesEntity();
 
 
     public CustomAdapter(Context context, List<Datum> themeData,OnButtonClickListener listener)
@@ -62,42 +64,55 @@ public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.CustomView
 
     @Override
     public void onBindViewHolder(@NonNull CustomViewHolder holder, int position) {
-        Object url = themeDataList.get(position).getImgUrl();
+        String url = String.valueOf(themeDataList.get(position).getImgUrl());
         String imgName = themeDataList.get(position).getName();
         boolean isDownloaded = themeDataList.get(position).getIsDownloaded();
+        int id = themeDataList.get(position).getId();
+        String mode = themeDataList.get(position).getMode();
 
-        if(themeDataList.get(position).getIsDownloaded())
+
+
+        if(((db.themesDao().getThemesStatusList(url,true))>0) || url.isEmpty())
         {
             holder.download_btn.setVisibility(View.GONE);
         }
 
         else {
             holder.download_btn.setVisibility(View.VISIBLE);
+            holder.download_btn.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    holder.download_btn.setVisibility(GONE);
+                    holder.download_progress.setVisibility(VISIBLE);
+                    Toast.makeText(context,"Download has started",Toast.LENGTH_SHORT).show();
+                    listener.onDownloadBtnClicked(url,imgName ,holder.download_btn,holder.download_progress,isDownloaded);
+                }
+            });
         }
 
         if(url!=null)
         {
             Glide.with(context).asBitmap().optionalCenterCrop()
-                    .load(Uri.parse(url.toString())).thumbnail(0.04f)
+                    .load(Uri.parse(url)).thumbnail(0.04f)
                 .into(holder.themeData);
 
+            entity.setDownload_status(isDownloaded);
+            entity.setThemeUrl(url);
+            entity.setTheme_id(id);
+            entity.setPath("");
+            entity.setTheme_name(imgName);
+            entity.setMode(mode);
+            db.themesDao().insertTheme(entity);
+
         }
-        holder.download_btn.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                holder.download_btn.setVisibility(GONE);
-                holder.download_progress.setVisibility(VISIBLE);
-                Toast.makeText(context,"Download has started",Toast.LENGTH_SHORT).show();
-                listener.onDownloadBtnClicked(url.toString(),imgName ,holder.download_progress);
-            }
-        });
-        holder.download_progress.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                holder.download_progress.setVisibility(INVISIBLE);
-                Toast.makeText(context,"Download Cancelled",Toast.LENGTH_SHORT).show();
-            }
-        });
+        else {
+            entity.setDownload_status(isDownloaded);
+            entity.setThemeUrl("");
+            entity.setTheme_id(id);
+            entity.setPath("null");
+            db.themesDao().insertTheme(entity);
+            holder.download_btn.setVisibility(GONE);
+        }
 
     }
 
