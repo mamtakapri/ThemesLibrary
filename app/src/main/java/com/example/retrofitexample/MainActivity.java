@@ -2,9 +2,11 @@ package com.example.retrofitexample;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.icu.text.SimpleDateFormat;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -33,6 +35,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.text.ParseException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import retrofit2.Call;
@@ -51,6 +58,7 @@ public class MainActivity extends AppCompatActivity implements  OnButtonClickLis
     ProgressBar progress;
     Button downloadBtn;
 
+
     ThemesRoomDatabase db;
     ThemesEntity entity = new ThemesEntity();
 
@@ -59,33 +67,35 @@ public class MainActivity extends AppCompatActivity implements  OnButtonClickLis
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-         db = ThemesRoomDatabase.getInstance(MainActivity.this);
-            //progressDialog = new ProgressDialog(MainActivity.this);
-            //progressDialog.setMessage("Loading....");
-            //progressDialog.show();
-        /*ThemesRoomDatabase db = ThemesRoomDatabase.getInstance(getApplicationContext());
-        ThemesEntity themesEntity=new ThemesEntity();
-        themesEntity.setThemeUrl(url);
-        themesEntity.setPath(path);
-        dao = db.themesDao();
-        dao.insertTheme(themesEntity);
-        dao.getThemesUrlList();*/
+        db = ThemesRoomDatabase.getInstance(MainActivity.this);
+        Date dateobj = new Date();
 
 
 
 
-        /*Stetho.InitializerBuilder initializerBuilder =
-                Stetho.newInitializerBuilder(this);// Enable Chrome DevTools
-        initializerBuilder.enableWebKitInspector(
-                Stetho.defaultInspectorModulesProvider(this)
-        );// Enable command line interface
-        initializerBuilder.enableDumpapp(
-                Stetho.defaultDumperPluginsProvider(this)
-        );// Use the InitializerBuilder to generate an Initializer
-        Stetho.Initializer initializer = initializerBuilder.build();// Initialize Stetho with the Initializer
-        Stetho.initialize(initializer);*/
+        SharedPreferences sharedPref = getSharedPreferences("userData",MODE_PRIVATE);
+        String loadFirstTime = sharedPref.getString("loadFirstTime","");
+        long time = sharedPref.getLong("time", 0);
 
-        allStationData();
+        if(!TextUtils.isEmpty(loadFirstTime) && (dateobj.getTime() - time )<= 30000) {
+
+            List<ThemesEntity> dbThemesList = db.themesDao().getThemesAllList();
+            generateDataList(null,dbThemesList);
+
+            Toast.makeText(getApplicationContext(),(dateobj.getTime()-time)+"\n Before 30 seconds",Toast.LENGTH_SHORT).show();
+
+
+        }
+        else{
+
+            long date = dateobj.getTime();
+            SharedPreferences.Editor edit = sharedPref.edit();
+            allStationData();
+            edit.putString("loadFirstTime", "No");
+            edit.putLong("time", date);
+            edit.commit();
+            Toast.makeText(getApplicationContext(),"after 30 seconds",Toast.LENGTH_SHORT).show();
+        }
 
     }
 
@@ -126,26 +136,9 @@ public class MainActivity extends AppCompatActivity implements  OnButtonClickLis
             @Override
             public void onResponse(Call<RetroData> call, Response<RetroData> response) {
                 RetroData model = response.body();
-                if (model != null) {
-                    //progressDialog.dismiss();
-                    //generateDataList(model.getData());
-                    generateDataList((model.getData()));
-                    //Log.d("data",String.valueOf(model.getData().size()));
-
-                    /*if (db.themesDao().getThemesUrlList(url).size()==0 && !isDownload)
-                    {
-                        entity.setThemeUrl(url);
-                        entity.setDownload_status(true);
-                        entity.setPath(MainActivity.this.getDatabasePath(ThemesRoomDatabase.DATABASE_NAME).toString() + "/" + name);
-                        db.themesDao().insertTheme(entity);
-                        entity.setDownload_status(true);
-                    }*/
-
-                }
+                if (model != null) { generateDataList((model.getData()), null); }
                 else
-                {
-
-                }
+                { Toast.makeText(getApplicationContext(),"No data to show", Toast.LENGTH_SHORT).show(); }
 
             }
 
@@ -157,17 +150,37 @@ public class MainActivity extends AppCompatActivity implements  OnButtonClickLis
         });
     }
 
-    private void generateDataList(List<Datum> themeList) {
-
+    public void generateDataList(List<Datum> themeList,List<ThemesEntity> dbThemeList) {
+        CustomAdapter adapter;
         recyclerView = findViewById(R.id.show_theme_data_recycler_view);
-        CustomAdapter adapter = new CustomAdapter(this,themeList,this);
+
+        //List<ThemesEntity> nList = new ArrayList<>();
+        /*for(ThemesEntity item : dbThemeList)
+        {
+            if(item.getThemeUrl()!=null && !item.getThemeUrl().equals("null"))
+            {
+                nList.add(item);
+            }
+        }*/
+        if(dbThemeList==null) {
+            List<Datum> mList = new ArrayList<>();
+            for(Datum item : themeList)
+            {
+                if(item.getImgUrl()!=null && !item.getImgUrl().equals("null"))
+                {
+                    mList.add(item);
+                }
+            }
+            adapter = new CustomAdapter(this, mList, null, this);
+        }
+        else {
+            adapter = new CustomAdapter(this, null, dbThemeList, this);
+        }
         RecyclerView.LayoutManager layoutManager = new GridLayoutManager(MainActivity.this, 3);
         recyclerView.setLayoutManager(layoutManager);
         recyclerView.setAdapter(adapter);
 
     }
-
-
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
@@ -216,37 +229,10 @@ public class MainActivity extends AppCompatActivity implements  OnButtonClickLis
     private void beginDownload() {
         if (url != null)
         {
-
-             new AsyncTaskExample().execute();
-
-           /* BroadcastReceiver onComplete=new BroadcastReceiver() {
-                public void onReceive(Context ctxt, Intent intent) {
-                        progressBar.setVisibility(View.GONE);
-                        ThemesEntity entity = new ThemesEntity();
-                        entity.setThemeUrl(url);
-                        entity.setDownload_status(true);
-                        entity.setThemeUrl(file.toString());
-                        dao.insertTheme(entity);// your code
-                }
-            };*/
-
-           /* DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url))
-                    .setTitle("Theme "+name)
-                    .setDescription("Downloading "+ name)
-                    .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE| DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                    .setDestinationUri(Uri.fromFile(file))
-                    .setRequiresCharging(false)
-                    .setAllowedOverMetered(true)
-                    .setAllowedOverRoaming(true);
-
-            DownloadManager downloadManager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
-            downloadManager.enqueue(request);*/
-            //registerReceiver(onComplete, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
-
+            new AsyncTaskExample().execute();
         }
         else
         {
-
             Toast.makeText(MainActivity.this, "File Not Exist", Toast.LENGTH_SHORT).show();
         }
     }
@@ -268,6 +254,7 @@ public class MainActivity extends AppCompatActivity implements  OnButtonClickLis
             if (!TextUtils.isEmpty(url)) {
                 bmImg = getBitmap(url);
             }
+
             if(bmImg!=null) {
                 ByteArrayOutputStream bytes = new ByteArrayOutputStream();
                 bmImg.compress(Bitmap.CompressFormat.JPEG, 100, bytes);

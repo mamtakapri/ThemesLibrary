@@ -1,13 +1,28 @@
 package com.example.retrofitexample;
 
+import android.icu.text.DateFormat;
+import android.icu.text.SimpleDateFormat;
+import android.icu.util.TimeZone;
+import android.os.Build;
+import android.util.Log;
+
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.Ignore;
 import androidx.room.Index;
 import androidx.room.PrimaryKey;
+import androidx.room.TypeConverter;
+import androidx.room.TypeConverters;
+
+import java.util.Date;
+import java.text.ParseException;
+import java.util.Locale;
 
 @Entity(tableName = "themes_table")
+
+
 public class ThemesEntity {
     @NonNull
     @PrimaryKey
@@ -29,6 +44,17 @@ public class ThemesEntity {
 
     @ColumnInfo(name = "LOCAL PATH")
     private String path;
+
+    @TypeConverters(DateTypeConverter.class)
+    @ColumnInfo(name = "Time of Creation")
+    private Date creationDate;
+
+    @TypeConverters(DateTypeConverter.class)
+    @ColumnInfo(name = "Time of Updation")
+    private Date updationDate;
+
+
+
 
 
     public ThemesEntity()
@@ -82,4 +108,9 @@ public class ThemesEntity {
         return themeUrl;
     }
 
+    public void setCreationDate(Date creationDate) { this.creationDate = creationDate; }
+    public Date getCreationDate() { return creationDate; }
+
+    public void setUpdationDate(Date updationDate) { this.updationDate = updationDate; }
+    public Date getUpdationDate() { return updationDate; }
 }
